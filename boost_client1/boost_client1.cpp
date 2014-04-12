@@ -24,8 +24,26 @@ public:
 		udp::resolver::iterator itr = resolver.resolve(query);
 
 		remote_endpoint_ = *itr;
+
+		// Possibly send some kind of init message to server on this initial send
 		start_send();
 	}
+
+	~udp_client()
+	{
+		socket_.close();
+	}
+
+	void send_keyState(int keyState)
+	{
+		send_buf_[0] = keyState;
+		start_send();
+	}
+	int get_keyState()
+	{
+		return recv_buf_[0];
+	}
+
 
 private:
 	boost::asio::io_service& io_service_;
@@ -33,14 +51,14 @@ private:
 	enum { max_length = 1024 };
 	char data_[max_length];
 
-	boost::array<char, 1> send_buf_ = { { 0 } };
-	boost::array<char, 128> recv_buf_;
+	boost::array<int, 1> send_buf_ = { { 0 } };
+	boost::array<int, 1> recv_buf_;
 
 	udp::endpoint remote_endpoint_;
 
 	void start_send()
 	{
-		std::cout << "start_send" << std::endl;
+		//std::cout << "Sending: " << send_buf_.data() << std::endl;
 
 		boost::shared_ptr<std::string> message(
 			new std::string("this is a string"));
@@ -55,26 +73,19 @@ private:
 	void handle_receive(const boost::system::error_code& error,
 		std::size_t len)
 	{
-		std::cout << "handle_receive" << std::endl;
-		std::cout.write(recv_buf_.data(), len);
+		//std::cout << "Receiving: " << recv_buf_[0] << std::endl;
 	}
 
 	void handle_send(boost::shared_ptr<std::string> /*message*/,
 		const boost::system::error_code& error,
 		std::size_t /*bytes_transferred*/)
 	{
-		std::cout << "handle_send" << std::endl;
-		std::cout << error << std::endl;
 		if (!error || error == boost::asio::error::message_size)
 		{
-			std::cout << "recv_from" << std::endl;
 			socket_.async_receive_from(boost::asio::buffer(recv_buf_), remote_endpoint_,
 				boost::bind(&udp_client::handle_receive, this,
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
-
-			Sleep(100);
-			start_send();
 		}
 	}
 };
@@ -84,8 +95,59 @@ int main(int argc, char* argv[])
 	try
 	{
 		boost::asio::io_service io_service;
-		udp_client server(io_service, "127.0.0.10", "13");
-		io_service.run();
+		udp_client cli(io_service, "127.0.0.10", "13");
+
+		int keyState = 0;
+		int recvState = 0;
+
+		while (1)
+		{
+			//encoding
+			if (GetAsyncKeyState(VK_UP))
+			{
+				keyState = keyState | 1;
+			}
+			if (GetAsyncKeyState(VK_DOWN))
+			{
+				keyState = keyState | 1 << 1;
+			}
+			if (GetAsyncKeyState(VK_LEFT))
+			{
+				keyState = keyState | 1 << 2;
+			}
+			if (GetAsyncKeyState(VK_RIGHT))
+			{
+				keyState = keyState | 1 << 3;
+			}
+
+			cli.send_keyState(keyState);
+			io_service.poll();
+			recvState = cli.get_keyState();
+
+			//decoding
+			if (recvState & 1)
+			{
+				std::cout << "Up" << std::endl;
+			}
+			if (recvState & 1 << 1)
+			{
+				std::cout << "Down" << std::endl;
+			}
+			if (recvState & 1 << 2)
+			{
+				std::cout << "Left" << std::endl;
+			}
+			if (recvState & 1 << 3)
+			{
+				std::cout << "Right" << std::endl;
+			}
+
+			io_service.poll();
+			keyState = 0;
+			recvState = 0;
+			Sleep(100);
+		}
+
 	}
 	catch (std::exception& e)
 	{
@@ -94,4 +156,3 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-

@@ -48,13 +48,13 @@ private:
 	void handle_receive(const boost::system::error_code& error,
 		std::size_t /*bytes_transferred*/)
 	{
-		std::cout << "received something" << std::endl;
+		std::cout << make_daytime_string() << " Recieved: " << recv_buffer_[0] << std::endl;
 		if (!error || error == boost::asio::error::message_size)
 		{
 			boost::shared_ptr<std::string> message(
 				new std::string(make_daytime_string()));
 
-			socket_.async_send_to(boost::asio::buffer(*message), remote_endpoint_,
+			socket_.async_send_to(boost::asio::buffer(recv_buffer_), remote_endpoint_,
 				boost::bind(&udp_server::handle_send, this, message,
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
@@ -71,7 +71,7 @@ private:
 
 	udp::socket socket_;
 	udp::endpoint remote_endpoint_;
-	boost::array<char, 1> recv_buffer_;
+	boost::array<int, 1> recv_buffer_;
 };
 
 int main()
