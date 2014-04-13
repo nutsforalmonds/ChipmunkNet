@@ -40,7 +40,7 @@ private:
 
 	udp::socket socket_;
 	udp::endpoint remote_endpoint_;
-	boost::array<int, 1> recv_buffer_;
+	boost::array<char, 66> recv_buffer_;
 
 	void start_receive()
 	{

@@ -36,12 +36,29 @@ public:
 
 	void send_keyState(int keyState)
 	{
-		send_buf_[0] = keyState;
+		/*send_buf_[0] = keyState & 0xFF;
+		send_buf_[1] = keyState >> 8 && 0xFF;
+		send_buf_[2] = keyState >> 16 && 0xFF;
+		send_buf_[3] = keyState >> 24 && 0xFF;
+		*/
+		memcpy(&send_buf_, &keyState, sizeof(keyState));
 		start_send();
 	}
 	int get_keyState()
 	{
-		return recv_buf_[0];
+		int ret;
+		/*ret = recv_buf_[3];
+		ret = ret << 8;
+		ret = recv_buf_[2] || ret;
+		ret = ret << 8;
+		ret = recv_buf_[1] || ret;
+		ret = ret << 8;
+		ret = recv_buf_[0] || ret;
+		ret = ret << 8;
+		std::cout << ret << std::endl;*/
+		memcpy(&ret, &recv_buf_, sizeof(ret));
+
+		return ret;
 	}
 
 
@@ -50,12 +67,37 @@ private:
 	udp::socket socket_;
 	enum { max_length = 1024 };
 	char data_[max_length];
+	long clientID = 0;
 
-	boost::array<int, 1> send_buf_ = { { 0 } };
-	boost::array<int, 1> recv_buf_;
-	boost::array<char, 128> recv_hb_;
+	//boost::array<int, 1> send_buf_ = { { 0 } };
+	//boost::array<int, 1> recv_buf_;
+	boost::array<char, 66> send_buf_ = { { 0 } };
+	boost::array<char, 66> recv_buf_ = { { 0 } };
 
 	udp::endpoint remote_endpoint_;
+
+	/*void init()
+	{
+		boost::array<int, 1> send_buf_ = { { 0 } };
+		socket_.async_send_to(boost::asio::buffer(send_buf_), remote_endpoint_,
+			boost::bind(&udp_client::handle_send_init, this, message,
+			boost::asio::placeholders::error,
+	boost::asio::placeholders::bytes_transferred));
+	}
+
+	void handle_send_init()
+	{
+		socket_.async_receive_from(boost::asio::buffer(recv_buf_), remote_endpoint_,
+			boost::bind(&udp_client::handle_recv_init, this,
+			boost::asio::placeholders::error,
+			boost::asio::placeholders::bytes_transferred));
+	}
+
+	void handle_recv_init()
+	{
+
+	} */
+
 
 	void start_send()
 	{
