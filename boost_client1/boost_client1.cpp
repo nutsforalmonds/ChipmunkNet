@@ -53,6 +53,7 @@ private:
 
 	boost::array<int, 1> send_buf_ = { { 0 } };
 	boost::array<int, 1> recv_buf_;
+	boost::array<char, 128> recv_hb_;
 
 	udp::endpoint remote_endpoint_;
 
@@ -121,7 +122,12 @@ int main(int argc, char* argv[])
 			}
 
 			cli.send_keyState(keyState);
+
+			// Honestly not sure what difference the position of this poll() makes
+			// adding it after the receive seems to work the same, but not having it
+			// results in nothing ever being received.
 			io_service.poll();
+			
 			recvState = cli.get_keyState();
 
 			//decoding
@@ -142,7 +148,6 @@ int main(int argc, char* argv[])
 				std::cout << "Right" << std::endl;
 			}
 
-			io_service.poll();
 			keyState = 0;
 			recvState = 0;
 			Sleep(100);

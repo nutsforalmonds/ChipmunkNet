@@ -36,6 +36,12 @@ public:
 	}
 
 private:
+
+
+	udp::socket socket_;
+	udp::endpoint remote_endpoint_;
+	boost::array<int, 1> recv_buffer_;
+
 	void start_receive()
 	{
 		socket_.async_receive_from(
@@ -68,10 +74,6 @@ private:
 		std::size_t /*bytes_transferred*/)
 	{
 	}
-
-	udp::socket socket_;
-	udp::endpoint remote_endpoint_;
-	boost::array<int, 1> recv_buffer_;
 };
 
 int main()
@@ -81,6 +83,7 @@ int main()
 		boost::asio::io_service io_service;
 		udp_server server(io_service);
 		io_service.run();
+
 	}
 	catch (std::exception& e)
 	{
